@@ -2,6 +2,8 @@ package com.damon4u.demo.aop;
 
 import com.damon4u.demo.datasource.config.datasource.DataSourceContextHolder;
 import com.damon4u.demo.datasource.config.datasource.DataSourceType;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.slf4j.Logger;
@@ -26,14 +28,22 @@ import org.springframework.stereotype.Component;
 public class DataSourceAspect {
     private static final Logger logger = LoggerFactory.getLogger(DataSourceAspect.class);
 
-    @Before("execution(* com.damon4u.demo.service..*.*(..)) && @annotation(com.damon4u.demo.annotation.ReadDataSource)")
-    public void setReadDataSourceType() {
+    @Around("execution(* com.damon4u.demo.service..*.*(..)) && @annotation(com.damon4u.demo.annotation.ReadDataSource)")
+    public void setReadDataSourceType(ProceedingJoinPoint jp) {
         //如果已经开启写事务了，那之后的所有读都从写库读
         if (!DataSourceType.WRITE.getType().equals(DataSourceContextHolder.getReadOrWrite())) {
             logger.info(">>>>>>>>>>>> setReadDataSourceType");
             DataSourceContextHolder.setRead();
         } else {
             logger.info(">>>>>>>>>>>> not setReadDataSourceType to write context");
+        }
+        try {
+            jp.proceed();
+        } catch (Throwable throwable) {
+            throwable.printStackTrace();
+        } finally { // TODO 这里其实是需要service层做限制，最好不要在一个有注解标注的方法中再切换到别的数据源，
+                    // TODO 如果需要一个service方法操作多个数据源，可以在最开始创建一个方法，然后调用多个使用注解标注数据源的方法
+            DataSourceContextHolder.clear();
         }
     }
 

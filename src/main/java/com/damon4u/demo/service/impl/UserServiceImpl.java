@@ -4,7 +4,9 @@ import com.damon4u.demo.annotation.ReadDataSource;
 import com.damon4u.demo.annotation.WriteDataSource;
 import com.damon4u.demo.dao.UserMapper;
 import com.damon4u.demo.domain.User;
+import com.damon4u.demo.exception.ServiceException;
 import com.damon4u.demo.service.UserService;
+import com.damon4u.demo.util.SpringContextUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,5 +56,39 @@ public class UserServiceImpl implements UserService {
     @ReadDataSource
     public List<User> getUserByName(String userName) {
         return userMapper.findByUserName(userName);
+    }
+
+    @Override
+    @WriteDataSource
+    @Transactional(rollbackFor = ServiceException.class)
+    public void saveThrowExceptionWithTransaction(User user) throws ServiceException {
+        userMapper.insert(user);
+        throw new ServiceException("db exception");
+    }
+
+    @Override
+    @WriteDataSource
+    public void saveThrowExceptionWithoutTransaction(User user) throws ServiceException {
+        userMapper.insert(user);
+        throw new ServiceException("db exception");
+    }
+
+    @Override
+    public void readThenWrite(User user) {
+        User user1 = getUser(1L);
+        logger.info("user={}", user1);
+        save(user);
+    }
+
+    @Override
+    public void readThenWriteGetBean(User user) {
+        UserService service = getService();
+        User user1 = service.getUser(1L);
+        logger.info("user={}", user1);
+        service.save(user);
+    }
+
+    public UserService getService() {
+        return SpringContextUtil.getBean(getClass());
     }
 }

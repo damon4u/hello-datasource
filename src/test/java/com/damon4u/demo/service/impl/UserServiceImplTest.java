@@ -1,6 +1,7 @@
 package com.damon4u.demo.service.impl;
 
 import com.damon4u.demo.domain.User;
+import com.damon4u.demo.exception.ServiceException;
 import com.damon4u.demo.service.UserService;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -10,6 +11,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import javax.annotation.Resource;
+
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -39,12 +42,40 @@ public class UserServiceImplTest {
     public void getUser() throws Exception {
         User user = userService.getUser(1L);
         logger.info("user={}", user);
-        User user1 = userService.getUser(1L);
-        logger.info("user1={}", user1);
     }
 
     @Test
     public void getUserByName() throws Exception {
+        List<User> userByName = userService.getUserByName("test");
+        logger.info("userName={}", userByName);
+    }
+
+    @Test(expected = ServiceException.class)
+    public void saveThrowExceptionWithTransaction() throws Exception {
+        User user = new User();
+        user.setUserName("tom2");
+        userService.saveThrowExceptionWithTransaction(user);
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void saveThrowExceptionWithoutTransaction() throws Exception {
+        User user = new User();
+        user.setUserName("tom");
+        userService.saveThrowExceptionWithoutTransaction(user);
+    }
+
+    @Test
+    public void readThenWrite() {
+        User user = new User();
+        user.setUserName("tom3");
+        userService.readThenWrite(user);
+    }
+
+    @Test
+    public void readThenWriteGetBean() {
+        User user = new User();
+        user.setUserName("tom3");
+        userService.readThenWriteGetBean(user);
     }
 
 }
